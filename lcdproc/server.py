@@ -20,6 +20,7 @@ class Server(object):
         self.server_info = dict()
         self.screens = dict()
         self.keys = list()
+        self.messages = list()
                 
     def start_session(self):
         
@@ -53,9 +54,23 @@ class Server(object):
             if "connect" in response:   # Special reply to "hello"
                 break
             # TODO Keep track of which screen is displayed
-            # Try again if response was key, menu or visibility notification.
+            # Try again if response was key, menu or visibility notification,
+            # but add the message to the message list
+            self.messages.append(response)
+
         if "huh" in response or self.debug: print "Telnet Response: %s" % (response[:-1])
         return response
+
+    def get_messages(self):
+        """
+        Get Messages
+
+        Return all the non-response messages sent from LCDd to the client since
+        the last call of get_messages.
+        """
+        ret = self.messages
+        self.messages = list()
+        return ret
 
 
     def poll(self):
@@ -72,6 +87,15 @@ class Server(object):
             return response
         else:
             return None
+
+    def poll_nonblocking(self):
+        """
+        Nonblocking Poll
+
+        Poll, but won't block if LCDd has nothing to say.
+        """
+        null_response = self.request("noop")
+        return self.get_messages()
 
 
     def add_screen(self, ref):     
